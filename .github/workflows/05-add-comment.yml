@@ -19,6 +19,9 @@ jobs:
 #NEW: (END) ############################################################
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
       - name: Set up QEMU # Build images to support multi-platforms
         uses: docker/setup-qemu-action@v4
 
@@ -51,7 +54,7 @@ jobs:
       - name: Docker build # Build Image
         uses: docker/build-push-action@v7
         with:
-          context: .
+          #context: .
           push: false # false for this demo to prevent overwriting image tags of other examples. 
           # Your workflow will build the Docker image, but it will NOT push it to Docker Hub.
           tags: ${{ steps.docker_meta.outputs.tags }}
