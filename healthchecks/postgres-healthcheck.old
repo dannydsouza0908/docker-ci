@@ -5,7 +5,8 @@
 set -eo pipefail
 
 # Create variables
-host="$(hostname -i || echo '127.0.0.1')" # return ip address if available, if not, use 127.0.0.1 as host variable
+# host="$(hostname -i || echo '127.0.0.1')" # return ip address if available, if not, use 127.0.0.1 as host variable
+host="postgres"
 user="${POSTGRES_USER:-postgres}"
 db="${POSTGRES_DB:-$POSTGRES_USER}"
 export PGPASSWORD="${POSTGRES_PASSWORD:-}"
