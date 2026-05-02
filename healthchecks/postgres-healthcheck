@@ -1,0 +1,15 @@
+#!/bin/bash
+set -eo pipefail
+
+host="$(hostname -i || echo '127.0.0.1')"
+user="${POSTGRES_USER:-postgres}"
+db="${POSTGRES_DB:-$POSTGRES_USER}"
+
+for i in {1..10}; do
+    if echo "SELECT 1" | psql --host "$host" --username "$user" --dbname "$db" --quiet --no-align --tuples-only; then
+        exit 0
+    fi
+    sleep 1
+done
+
+exit 1
