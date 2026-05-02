@@ -21,7 +21,6 @@ args=(
 )
 
 if select="$(echo 'SELECT 1' | psql "${args[@]}")" && [ "$select" = '1' ]; then
-	echo "Success"
 	exit 0
 fi
 # This will run the first the psql --host 127.0.0.1 --username postgres --dbname "" --quiet --no-align --tuples-only
