@@ -1,0 +1,28 @@
+services: # Below 3 containers Docker Compose will run.
+  allhands22:
+    image: "${TESTING_IMAGE}" 
+    # Runs a container using the image stored in the environment variable TESTING_IMAGE
+    # This allows swapping images without editing the compose file.
+  
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./healthchecks:/healthchecks 
+      # Mount the local healthchecks folder to /healthchecks
+    healthcheck:
+      test: /healthchecks/postgres-healthcheck # Run the custom script to check PostgreSQL
+      interval: "5s" # Run healthcheck every 5 secs
+ 
+  sut: # System Under Test
+    image: "${TESTING_IMAGE}"
+    depends_on:
+      allhands22:
+        condition: service_started # Start sut only after allhands22 has started (not necessarily healthy).
+      postgres:
+        condition: service_healthy # Start sut only after PostgreSQL passes its healthcheck.
+    # run all your tests here against the allhands22 service
+    command: curl --fail http://allhands22:80 || exit 1
+    # Try to reach allhands22 on port 80. If the request fails, exit with status 1 (marking the test container as failed).
