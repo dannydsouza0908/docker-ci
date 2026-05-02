@@ -1,0 +1,99 @@
+---
+name: 09 Build and Integration Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-image:
+    name: Build Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up QEMU # Build images to support multi-platforms
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx # Extend image building capabilities
+        uses: docker/setup-buildx-action@v4 
+
+      - name: Login to Docker Hub # Login to DockerHub
+        uses: docker/login-action@v4 
+        with:
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build test image for Unit and Integration Testing
+        # Since we want to do a Unit Test of the image, we wont be pushing the build to Docker image registry,
+        # rather, we will be exporting (loading) into the local Docker Engine available on GitHub
+        uses: docker/build-push-action@v7 
+        with:
+          push: false # This will not push the image to registry
+          load: true # Export to Docker Engine rather than pushing to a registry
+          tags: ${{ github.run_id }} # Tags the built image with the workflow run ID 
+          target: test # Builds only the test stage of your Dockerfile
+          cache-from: type=gha # import previously saved layers from GitHub Actions cache
+          cache-to: type=gha,mode=max # export new/updated layers back to GitHub Actions cache
+          # type=gha selects the GitHub Actions cache backend
+          # mode=max exports all intermediate layers, not just the minimal set.         
+          platforms: linux/amd64 
+          # We didn't add the other platforms because
+          # load: true only works for a single platform — the native platform of the GitHub runner (usually linux/amd64).
+          # For multiplatform we need to do a push:true, but in this case we are disabling push image to the registry.
+
+        # for simple tests (npm test, etc.) just run a local image in docker. In this case we are just doing an echo command
+      - name: Unit Testing in Docker
+        run: |
+          docker run --rm ${{ github.run_id }} echo "run test commands here"
+
+#NEW: (START) ############################################################  
+        # for more advanced tests, use docker compose with `depends_on`
+          # NOTE: GHA and other CIs can also run dependency containers on their own
+          # GHA `services:` can do this if you're trying to avoid docker compose
+      - name: Test healthcheck in Docker Compose
+        run: |
+          export TESTING_IMAGE="${{ github.run_id }}"
+          docker compose -f docker-compose.test.yml up --exit-code-from sut
+        # Creates an environment variable TESTING_IMAGE whose value is the GitHub Action run ID
+        # We use the TESTING_IMAGE in the docker-compose.test.yml file as the image
+        # The docker compose refers the docker-compose.test.yml to create the services
+        # It creates 3 services: allhands22, postgres and sut
+        # And --exit-code-from sut tells Docker Compose: 
+        #  - When the sut container exits, use its exit code as the exit code of the entire docker compose up command.
+        #  - This is how your CI knows whether the tests passed or failed.
+        # if sut exits with: 0 -> tests passed, else -> test failed
+
+
+#NEW: (END) ############################################################  
+
+      - name: Docker Metadata for Final Image Build
+        id: docker_meta
+        uses: docker/metadata-action@v6
+        with:
+          images: danny0908/docker-ci # sets the base image name
+          flavor: |
+            latest=false
+          # disable automatic latest tagging
+          tags: |
+            type=raw,value=09
+          # comment these out on all but 04-add-metadata.yaml to avoid overwriting image tags
+          # type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+          # type=ref,event=pr
+          # type=ref,event=branch
+          # type=semver,pattern={{version}}
+      
+      - name: Docker Build and Push to Docker Hub
+        uses: docker/build-push-action@v7
+        with:
+          push: true
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # comma seperated list of what OS and architechtures to build for (in parallel)
+          # default is linux/amd64 (the OS of the runner) but you can add more
+          # adding linux/arm64 is recommended for Apple Silicon, Raspberry Pi, AWS Graviton, etc.
+          # linux/arm/v7 is for 32-bit ARM devices like Raspberry Pi 2/3
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
