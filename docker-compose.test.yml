@@ -13,7 +13,7 @@ services: # Below 3 containers Docker Compose will run.
       - ./healthchecks:/healthchecks 
       # Mount the local healthchecks folder to /healthchecks
     healthcheck:
-      test: /healthchecks/postgres-healthcheck # Run the custom script to check PostgreSQL
+      test: /healthchecks/postgres-healthcheck.old # Run the custom script to check PostgreSQL
       interval: "5s" # Run healthcheck every 5 secs
       start_period: "10s"
  
