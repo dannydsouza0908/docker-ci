@@ -1,31 +1,16 @@
 #!/bin/bash
-# Enables strict error handling. 
-# Exit immidiately.  
-# If a pipeline fails at any stage, whole pipeline fails
 set -eo pipefail
 
-# Create variables
-# host="$(hostname -i || echo '127.0.0.1')" # return ip address if available, if not, use 127.0.0.1 as host variable
-host="postgres"
+#host="$(hostname -i || echo '127.0.0.1')"
+host=postgres
 user="${POSTGRES_USER:-postgres}"
 db="${POSTGRES_DB:-$POSTGRES_USER}"
-export PGPASSWORD="${POSTGRES_PASSWORD:-}"
-# We have already set the POSTGRES_USER and POSTGRES_PASSWORD as environment variables in the docker-compose.test.yml file, it will refer those
 
-args=(
-	# force postgres to not use the local unix socket (test "external" connectibility)
-	--host "$host"
-	--username "$user"
-	--dbname "$db"
-	--quiet --no-align --tuples-only
-)
-
-if select="$(echo 'SELECT 1' | psql "${args[@]}")" && [ "$select" = '1' ]; then
-	exit 0
-fi
-# This will run the first the psql --host 127.0.0.1 --username postgres --dbname "" --quiet --no-align --tuples-only
-# Then it will pass argument SELECT 1 (like an interactive shell)
-# The output will be "1". So, variable: select=1 
-# Then it will compare select = 1, if true exit 0
+for i in {1..10}; do
+    if echo "SELECT 1" | psql --host "$host" --username "$user" --dbname "$db" --quiet --no-align --tuples-only; then
+        exit 0
+    fi
+    sleep 1
+done
 
 exit 1
