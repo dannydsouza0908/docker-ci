@@ -57,6 +57,11 @@ jobs:
             --k3s-arg "--no-deploy=traefik,servicelb,metrics-server@server:*"
         # Add 1 server and 1 agent, no k3d loadbalancer/ingress needed
         # k3s: No k3s LB needed (traefik), and disable metrics‑server on all server nodes
+      
+      - name: Debug workspace
+        run: |
+          pwd
+          ls -R .
 
       - name: Smoke test deployment in k3d Kubernetes
         run: |
