@@ -17,6 +17,9 @@ jobs:
       packages: write # needed to push docker image to ghcr.io
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
       - name: Set up QEMU # Build images to support multi-platforms
         uses: docker/setup-qemu-action@v4
 
