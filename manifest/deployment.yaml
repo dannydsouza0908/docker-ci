@@ -1,0 +1,28 @@
+# kubernetes deployment
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  labels:
+    app: myapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+  template: # Template describes the pods that will be created.
+    # The selector and template labels should match or else deployment wont work
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      imagePullSecrets: # used to authenticate with a private container registry to pull images. 
+        - name: regcred # Name of the Kubectl secret. Contains the username/password/server details
+      containers:
+        - name: myapp
+          image: "${TESTING_IMAGE}" # Get the image details from the environment variable
+          imagePullPolicy: IfNotPresent # Only pull the image if it is not already cached on the node.
+          # Always: Pull the image every time a pod starts, even if cached
+          # IfNotPresent: Pull only if the image is missing
+          # Never: Never pull; use only local images
