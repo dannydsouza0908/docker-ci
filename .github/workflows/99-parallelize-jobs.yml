@@ -124,7 +124,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: AbsaOSS/k3d-action@v2.4.0
+      - name: Create a temporary Kubernetes- k3d cluster
+        uses: AbsaOSS/k3d-action@v2.4.0
         with:
           cluster-name: "test-cluster-1"
           args: >-
@@ -141,7 +142,7 @@ jobs:
             --docker-username=${{ github.actor }} \
             --docker-password=${{ secrets.GITHUB_TOKEN }}
           export TESTING_IMAGE=ghcr.io/dannydsouza0908/docker-ci:"$GITHUB_RUN_ID"
-          envsubst < manifests/deployment.yaml  | kubectl apply -f -
+          envsubst < manifest/deployment.yaml  | kubectl apply -f -
           kubectl rollout status deployment myapp
           kubectl exec deploy/myapp -- curl --fail localhost
 
